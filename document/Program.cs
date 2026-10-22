@@ -5,16 +5,22 @@ namespace document
 {
     public static class Program
     {
+        /// <summary>從 APP 啟動器選了資料夾開啟時（--root "資料夾"），這次就讀這個資料夾；否則為 null。</summary>
+        public static string? StartupRoot { get; private set; }
+
         [STAThread]
         public static void Main(string[] args)
         {
+            StartupRoot = DataStore.RootFromArgs(args);
             ThemeService.Load(); // 讀取使用者選的主題（跟隨系統 / 淺色 / 深色）
 
             // 只允許開一個視窗，避免兩個視窗互相覆蓋對方存的資料
             using var mutex = new Mutex(true, SingleInstanceName(), out bool isFirst);
             if (!isFirst)
             {
-                MessageBox.Show("文件整理已經開啟了。", "文件整理");
+                MessageBox.Show(StartupRoot == null
+                    ? "文件整理已經開啟了。"
+                    : "文件整理已經開啟了。\n\n要換資料夾，請先關閉文件整理，再從 APP 啟動器重新選擇。", "文件整理");
                 return;
             }
 

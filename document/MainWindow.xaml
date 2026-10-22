@@ -252,13 +252,13 @@
                                 <StackPanel Orientation="Horizontal">
                                     <TextBlock Text="&#xE8DA;" Style="{StaticResource Icon}" FontSize="12" Foreground="{DynamicResource AccentBrush}"
                                                Margin="0,1,6,0"/>
-                                    <TextBlock Text="存放位置" FontSize="12" FontWeight="SemiBold"/>
+                                    <TextBlock x:Name="RootLabel" Text="存放位置" FontSize="12" FontWeight="SemiBold"/>
                                 </StackPanel>
                                 <TextBlock x:Name="RootPathText" FontSize="11" Foreground="{DynamicResource MutedBrush}" Margin="0,3,0,0"
                                            TextTrimming="CharacterEllipsis"/>
                             </StackPanel>
                             <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="6,0,0,0">
-                                <Button Content="&#xE70F;" Style="{StaticResource FieldIconButton}" ToolTip="變更存放位置"
+                                <Button x:Name="ChangeRootButton" Content="&#xE70F;" Style="{StaticResource FieldIconButton}" ToolTip="變更存放位置"
                                         Click="ChangeRoot_Click"/>
                                 <Button Content="&#xE8A7;" Style="{StaticResource FieldIconButton}" ToolTip="在檔案總管開啟"
                                         Click="OpenRoot_Click"/>

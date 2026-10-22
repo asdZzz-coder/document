@@ -45,6 +45,20 @@ namespace document.Tests
             Assert.Single(Directory.GetFiles(_dir, "settings.json.corrupt-*"));
         }
 
+        // ---------- APP 啟動器傳來的資料夾 ----------
+
+        [Theory]
+        [InlineData(new[] { "--root", @"\\nas\公司文件" }, @"\\nas\公司文件")]
+        [InlineData(new[] { "--ROOT", @"D:\文件\" }, @"D:\文件")]
+        [InlineData(new[] { @"--root=D:\文件" }, @"D:\文件")]
+        [InlineData(new[] { "--root", @"D:\" }, @"D:\")]
+        [InlineData(new[] { "--other", "x" }, null)]
+        [InlineData(new[] { "--root" }, null)]
+        [InlineData(new[] { "--root", "  " }, null)]
+        [InlineData(new string[0], null)]
+        public void RootFromArgs_ReadsLauncherFolder(string[] args, string? expected) =>
+            Assert.Equal(expected, DataStore.RootFromArgs(args));
+
         // ---------- 檔案類型 ----------
 
         [Theory]

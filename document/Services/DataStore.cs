@@ -59,6 +59,22 @@ namespace document.Services
             File.Move(tmp, path, overwrite: true);
         }
 
+        /// <summary>
+        /// APP 啟動器開啟時傳來的資料夾：--root "資料夾" 或 --root="資料夾"。沒有就回傳 null。
+        /// </summary>
+        public static string? RootFromArgs(IReadOnlyList<string> args)
+        {
+            for (int i = 0; i < args.Count; i++)
+            {
+                var arg = args[i];
+                string? value = null;
+                if (string.Equals(arg, "--root", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Count) value = args[i + 1];
+                else if (arg.StartsWith("--root=", StringComparison.OrdinalIgnoreCase)) value = arg["--root=".Length..];
+                if (!string.IsNullOrWhiteSpace(value)) return Path.TrimEndingDirectorySeparator(value.Trim()); // 「D:\」這種根目錄會保留結尾的 \
+            }
+            return null;
+        }
+
         /// <summary>設定裡的存放位置；沒設定過就是預設位置。</summary>
         public static string RootPathOf(AppSettings settings) =>
             string.IsNullOrWhiteSpace(settings.RootPath) ? DefaultRootPath : settings.RootPath;

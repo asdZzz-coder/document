@@ -51,9 +51,15 @@ namespace document
             Width = Math.Min(Width, SystemParameters.WorkArea.Width - 20);
 
             _settings = DataStore.Load();
-            _root = DataStore.RootPathOf(_settings);
+            // 從 APP 啟動器選了資料夾開啟時讀那個資料夾（不改設定）；否則用設定裡的存放位置
+            _root = Program.StartupRoot ?? DataStore.RootPathOf(_settings);
             _selectedFolder = _root;
             _refreshTimer.Tick += (_, _) => { _refreshTimer.Stop(); RefreshAll(); };
+            if (FromLauncher)
+            {
+                RootLabel.Text = "存放位置（從啟動器選擇）";
+                ChangeRootButton.Visibility = Visibility.Collapsed;
+            }
             SortBox.SelectedIndex = 0;
 
             UpdateStatus();
@@ -196,11 +202,17 @@ namespace document
         private void UpdateStatus()
         {
             // 視窗標題列顯示版本：安裝版或從啟動器開啟為「文件整理 v1.0.0」，直接從原始碼執行則標示開發版
-            Title = _updater.IsRelease ? $"文件整理 v{_updater.CurrentVersion}" : "文件整理（開發版）";
+            Title = (_updater.IsRelease ? $"文件整理 v{_updater.CurrentVersion}" : "文件整理（開發版）")
+                + (FromLauncher ? $" － {RootName}" : "");
             StatusText.Text = $"版本 {_updater.CurrentVersion}";
         }
 
         // ---------- 存放位置 ----------
+
+        /// <summary>這次是從 APP 啟動器選了資料夾開啟的：存放位置由啟動器決定，程式裡不能改。</summary>
+        private static bool FromLauncher => Program.StartupRoot != null;
+
+        private string RootName => Path.GetFileName(Path.TrimEndingDirectorySeparator(_root)) is { Length: > 0 } name ? name : _root;
 
         private static bool TryPrepareFolder(string path)
         {
@@ -217,8 +229,9 @@ namespace document
         {
             if (TryPrepareFolder(_root)) return;
             var fallback = DataStore.DefaultRootPath;
-            MessageBox.Show(this,
-                $"找不到存放位置：\n{_root}\n\n可能是隨身碟或網路磁碟沒有接上。這次先改用預設位置：\n{fallback}\n\n接上之後按「存放位置」就能改回來。",
+            MessageBox.Show(this, FromLauncher
+                ? $"找不到 APP 啟動器選的資料夾：\n{_root}\n\n可能是 NAS 沒開機或網路沒連上。這次先改用預設位置：\n{fallback}\n\n要讀取別的資料夾，請關閉文件整理，再從啟動器重新選擇。"
+                : $"找不到存放位置：\n{_root}\n\n可能是隨身碟或網路磁碟沒有接上。這次先改用預設位置：\n{fallback}\n\n接上之後按「存放位置」就能改回來。",
                 "存放位置", MessageBoxButton.OK, MessageBoxImage.Warning);
             _root = fallback;
             _selectedFolder = fallback;
@@ -259,6 +272,12 @@ namespace document
         private async void ChangeRoot_Click(object sender, RoutedEventArgs e)
         {
             if (_busy) return;
+            if (FromLauncher)
+            {
+                MessageBox.Show(this, $"這次是從 APP 啟動器選了資料夾開啟的：\n{_root}\n\n要換資料夾，請關閉文件整理，再從啟動器按「開啟」重新選擇。",
+                    "存放位置", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
             var dlg = new OpenFolderDialog
             {
                 Title = "選擇資料夾和文件的存放位置",
@@ -384,7 +403,7 @@ namespace document
             _folderTotal = 0;
             _fileTotal = Walk(_root, 0, visible: true, nodes);
             RootPathText.Text = _root;
-            RootPathText.ToolTip = _root;
+            RootPathText.ToolTip = FromLauncher ? $"{_root}\n（由 APP 啟動器選擇，要換資料夾請從啟動器重新開啟）" : _root;
 
             var signature = string.Join("|", nodes.Select(n => $"{n.Path}:{n.Count}:{n.HasChildren}:{n.IsExpanded}"));
             _rebuildingFolders = true;
