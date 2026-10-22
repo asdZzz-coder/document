@@ -1,0 +1,59 @@
+name: Release
+
+# 推送 v* 標籤（例如 v1.0.8）就會自動用 ClickOnce 打包並發佈到 GitHub Releases，
+# 已安裝的程式下次開啟時就會偵測到新版本並詢問是否更新（更新檔一樣從 Release 下載）。
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      # 自動測試沒過就不發佈
+      - name: Test
+        run: dotnet test document.Tests/document.Tests.csproj
+
+      # ClickOnce 的 manifest 需要 .NET Framework 版的 MSBuild（Visual Studio 內建）
+      - uses: microsoft/setup-msbuild@v2
+
+      - name: Publish (ClickOnce)
+        shell: pwsh
+        run: |
+          $version = "${{ github.ref_name }}".TrimStart('v')
+          msbuild document/document.csproj /restore /t:Publish `
+            /p:PublishProfile=ClickOnceProfile `
+            /p:RuntimeIdentifier=win-x64 /p:SelfContained=true `
+            /p:Version=$version /p:ApplicationVersion="$version.0" `
+            /p:PublishDir="$PWD\clickonce\" /p:PublishUrl="$PWD\clickonce\" `
+            /v:minimal
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Zip installer
+        shell: pwsh
+        run: |
+          # 打包 ClickOnce 安裝需要的檔案 + 安裝.cmd（先複製到固定資料夾再安裝，
+          # 避免 ClickOnce「已從其他位置安裝」的錯誤；不放 setup.exe，以免從別的位置安裝）
+          Copy-Item -LiteralPath 'installer\安裝.cmd' -Destination 'clickonce\安裝.cmd'
+          $items = @('clickonce\安裝.cmd', 'clickonce\DocumentKeeper.application', 'clickonce\Application Files')
+          foreach ($i in $items) { if (-not (Test-Path -LiteralPath $i)) { throw "missing $i" } }
+          Compress-Archive -Path $items -DestinationPath DocumentKeeper-ClickOnce.zip
+          Get-Item DocumentKeeper-ClickOnce.zip | Select-Object Name, Length
+
+      - name: Upload to GitHub Release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $notes = "下載 DocumentKeeper-ClickOnce.zip，解壓縮後執行「安裝.cmd」。已安裝的電腦開啟程式時會詢問是否更新。`n`nDownload DocumentKeeper-ClickOnce.zip, extract it, and run 安裝.cmd. Installed copies will offer the update when opened."
+          gh release create "${{ github.ref_name }}" DocumentKeeper-ClickOnce.zip --title "${{ github.ref_name }}" --notes $notes

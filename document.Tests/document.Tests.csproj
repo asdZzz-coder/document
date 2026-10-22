@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageReference Include="xunit" Version="2.9.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4" />
+  </ItemGroup>
+
+  <!--
+    直接把要測的原始碼編進測試專案，而不是參考 DocumentKeeper.dll：
+    這台電腦的「智慧型應用程式控制」會擋下測試程式載入未簽章的 dll。
+  -->
+  <ItemGroup>
+    <Compile Include="..\document\Services\DataStore.cs" Link="Source\DataStore.cs" />
+    <Compile Include="..\document\Services\FolderService.cs" Link="Source\FolderService.cs" />
+    <Compile Include="..\document\Services\FileTypes.cs" Link="Source\FileTypes.cs" />
+    <Compile Include="..\document\Services\ThemeService.cs" Link="Source\ThemeService.cs" />
+    <Compile Include="..\document\Services\DesktopShortcutService.cs" Link="Source\DesktopShortcutService.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+</Project>
