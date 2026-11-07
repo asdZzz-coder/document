@@ -84,8 +84,10 @@ namespace document.Services
         {
             var p = Normalize(path);
             var r = Normalize(root);
+            // 磁碟根目錄（D:\）本來就以反斜線結尾，不能再多加一個
+            var prefix = Path.EndsInDirectorySeparator(r) ? r : r + Path.DirectorySeparatorChar;
             return string.Equals(p, r, StringComparison.OrdinalIgnoreCase)
-                || p.StartsWith(r + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase);
+                || p.StartsWith(prefix, StringComparison.OrdinalIgnoreCase);
         }
 
         /// <summary>顯示用的相對路徑：「工作 › 2026 › 報價」；根資料夾本身回傳空字串。</summary>

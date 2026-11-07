@@ -109,6 +109,25 @@ namespace document.Tests
             Assert.False(FolderService.IsSameOrInside(_root, a));
         }
 
+        [Theory]
+        [InlineData(@"D:\工作", @"D:\", true)]
+        [InlineData(@"D:\工作\2026", @"D:\", true)]
+        [InlineData(@"d:\工作", @"D:\", true)]
+        [InlineData(@"D:\", @"D:\", true)]
+        [InlineData(@"E:\工作", @"D:\", false)]
+        [InlineData(@"\\nas\share\工作", @"\\nas\share", true)]
+        [InlineData(@"\\nas\share\工作", @"\\nas\share\", true)]
+        [InlineData(@"\\nas\share2\工作", @"\\nas\share", false)]
+        public void IsSameOrInside_WorksWhenRootIsDriveOrShare(string path, string root, bool expected) =>
+            Assert.Equal(expected, FolderService.IsSameOrInside(path, root));
+
+        [Fact]
+        public void Rebase_WorksWhenFolderIsDirectlyOnDrive()
+        {
+            Assert.Equal(@"D:\新\子", FolderService.Rebase(@"D:\舊\子", @"D:\舊", @"D:\新"));
+            Assert.Equal(@"E:\工作", FolderService.Rebase(@"D:\工作", @"D:\", @"E:\"));
+        }
+
         [Fact]
         public void RelativeDisplay_JoinsFolderNames()
         {
